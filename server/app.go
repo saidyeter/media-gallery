@@ -79,6 +79,7 @@ func (a *App) Init() {
 		})
 	}
 
+	//path dönülecek  image/jpeg ile
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/", home)
 	a.Router.HandleFunc("/dirs", dirs)
