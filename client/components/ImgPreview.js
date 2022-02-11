@@ -1,27 +1,54 @@
 const imgPreviewTemplate = document.createElement("template");
 imgPreviewTemplate.innerHTML = `
-<style>
-div{
+<style> 
+  div > img {
+    vertical-align: middle;
+    max-width : 20rem;
+    max-height: 20rem;
+  }
 
-}
-div > img {
-  max-width : 20rem;
-  max-height: 20rem;
-}
-div > aside {
-  /* transform: translateY() */
-  transform: translate(1rem, -2rem);
-  /* text-align: right; */
-}
+  @media screen and (max-width: 30rem) {
+    div {
+      width : 100%;
+      height: 100%;
+    }
+  }
+
+  div > aside {
+     transform: translate(0, -2rem);
+    /**/
+  }
+
+  div > aside > span {
+    color: white;
+    background-color: rgba(0, 0, 0, .5);
+  }
+
+
+
 </style>
 <div>
   <img />
   <aside>
-    <span/>
+    <span />
   </aside>
 </div>
 `;
+/*
+  div > img {
+    object-fit: contain;
+    max-height: calc(100vh - 1rem);
+    max-width : 20rem;
+  }
 
+  @media screen and (max-width: 30rem) {
+    div {
+      max-width: calc(100vw - 1rem);
+      max-height: 20rem;
+    }
+  }
+
+ */
 class ImgPreview extends HTMLElement {
   constructor() {
     super();
