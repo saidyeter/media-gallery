@@ -8,7 +8,9 @@ import (
 	"image"
 	_ "image/jpeg"
 	"image/png"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,47 +18,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"golang.org/x/image/draw"
 )
 
 var allowedDirs []Dir
 
-// = []Dir{
-// 	{Id: "1", Path: "/Users/saidyeter/Pictures/meyve"},
-// 	{Id: "2", Path: "/Users/saidyeter/Pictures/kus"},
-// 	{Id: "3", Path: "/Users/saidyeter/Pictures/cicek"},
-// 	{Id: "4", Path: "C:/Users/said.yeter/Desktop/fotolar"},
-// }
-
 type App struct {
 	Router *mux.Router
-}
-
-type Directories struct {
-	DirList []Dir
-}
-
-type File struct {
-	Name   string
-	Path   string
-	Thumb  string
-	Actual string
-}
-
-type FilesResponse struct {
-	Files []File
-	Start int
-	End   int
-}
-
-type Dir struct {
-	Id   string
-	Path string
-}
-
-type VarsConfig struct {
-	Dirs []string `json:"dirs"`
 }
 
 func (a *App) Init() {
@@ -84,12 +54,22 @@ func (a *App) Init() {
 	a.Router.HandleFunc("/", home)
 	a.Router.HandleFunc("/dirs", dirs)
 	a.Router.HandleFunc("/files/{dir}", files)
-	a.Router.HandleFunc("/file/{dir}", file)
+	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
 }
 
 func (a *App) Run(addr string) {
 	fmt.Println("listening on " + addr)
-	http.ListenAndServe(addr, a.Router)
+
+	// Where ORIGIN_ALLOWED is like `scheme://dns[:port]`, or `*` (insecure)
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
+	originsOk := handlers.AllowedOrigins([]string{os.Getenv("ORIGIN_ALLOWED")})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	// start server listen
+	// with error handling
+	// log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), handlers.CORS(originsOk, headersOk, methodsOk)(router)))
+	log.Fatal(http.ListenAndServe(addr, handlers.CORS(originsOk, headersOk, methodsOk)(a.Router)))
+
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -97,6 +77,59 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+func downloadResponse(w http.ResponseWriter, f *os.File) {
+	contentType, err := GetFileContentType(f)
+	if err != nil {
+		panic(err)
+	}
+
+	f.Seek(0, 0)
+
+	fi, err := f.Stat()
+	if err != nil {
+		panic(err)
+	}
+
+	// Openfile, err := os.Open(Filename)
+	// FileSize := strconv.FormatInt(FileStat.Size(), 10)
+	// FileContentType := http.DetectContentType(FileHeader)
+	//Send the headers before sending the file
+	// writer.Header().Set("Content-Disposition", "attachment; filename="+Filename)
+	// writer.Header().Set("Content-Type", FileContentType)
+	// writer.Header().Set("Content-Length", FileSize)
+	//Allow CORS here By * or specific origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(f.Name()))
+	w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(200)
+
+	_, err = io.Copy(w, f)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func GetFileContentType(out *os.File) (string, error) {
+	//https://golangcode.com/get-the-content-type-of-file/
+
+	// Only the first 512 bytes are used to sniff the content type.
+	buffer := make([]byte, 512)
+
+	_, err := out.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	// Use the net/http package's handy DectectContentType function. Always returns a valid
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	contentType := http.DetectContentType(buffer)
+
+	return contentType, nil
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -146,17 +179,23 @@ func files(w http.ResponseWriter, r *http.Request) {
 }
 
 func file(w http.ResponseWriter, r *http.Request) {
+	// err := r.ParseMultipartForm(32 << 20) // maxMemory 32MB
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
 	vars := mux.Vars(r)
-	id := vars["dir"]
+	path := vars["dir"]
 
-	decodedValue, _ := url.QueryUnescape(id)
+	decodedValue, _ := url.QueryUnescape(path)
 
-	file := File{
-		Name:   decodedValue,
-		Path:   decodedValue,
-		Actual: getBase64(decodedValue),
+	input, err := os.Open(decodedValue)
+	if err != nil {
+		fmt.Println("read file error:", err)
 	}
-	respondWithJSON(w, 200, file)
+	defer input.Close()
+
+	downloadResponse(w, input)
 }
 
 func filesFromDir(dir string, start int, end int) FilesResponse {
