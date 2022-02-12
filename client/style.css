@@ -1,91 +1,81 @@
-:root{
-  --fullheight: calc(100vh - 2rem);
-  --fullwidth: calc(100vw - 2rem);
-}
-
 * {
+  padding: 0;
+  margin: 0;
   box-sizing: border-box;
 }
+
 body {
   font-size: 18px;
   font-family: Andale Mono, monospace;
-  margin: 0.5rem;
+  margin: 1rem;
   background-image: url(default-bg.svg);
   background-size: cover;
   background-attachment: fixed;
-
-  height: var(--fullheight);
-  width:  var(--fullwidth);
+  width: calc(100vw - 2rem);
+  height: calc(100vh - 2rem);
 }
 
-.sidebar {
-  grid-area: sidebar;
-  display: flex;
-  flex-direction: column;
-  row-gap: 0.5rem;
-  background-color: rgba(68, 68, 68, 0.2);
-}
-
-.content {
-  grid-area: content;
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
+.wrapper {
+  width: 100%;
+  height: 100%;
+  /* display: flex;
+  flex-direction: column; */
 }
 
 .header {
-  grid-area: header;
+  /* flex-basis: 10rem;
+  flex-shrink: 0; */
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid black;
 }
 
-.footer {
-  grid-area: footer;
+.content {
+  /* flex-grow: 1;
+  width: 100%;
+  height: 100%; */
+  overflow-y: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
-.wrapper {
-  height: var(--fullheight);
-  width:  var(--fullwidth);
-  display: grid;
-  grid-gap: 0.5rem;
-  grid-template-areas:
-    "header  header  header  header"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "sidebar content content content"
-    "footer  footer  footer  footer";
-}
-
-.box {
-  border-radius: 0.5rem;
-  padding: .5rem;
-}
-
-@media screen and (max-width: 30rem) {
-  .wrapper {
-    grid-template-areas:
-      "header"
-      "sidebar"
-      "content"
-      "footer";
-  }
-}
-
-.content-item {
+.photo {
+  /* width: 20rem;
   height: 20rem;
-  width: 20rem;
-  margin: 0.5rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background-position: center;
+  background-size: cover;
+  margin-bottom: 3px; */
+  width: calc(33.3% - 2px);
+  height: 30vw;
+  background-position: center;
+  background-size: cover;
+  margin-bottom: 3px;
+}
+ 
+/* https://stackoverflow.com/a/13550716 */
+@media only screen and (min-width: 960px) {
+  /* styles for browsers larger than 960px; */
+}
+@media only screen and (min-width: 1440px) {
+  /* styles for browsers larger than 1440px; */
+}
+@media only screen and (min-width: 2000px) {
+  /* for sumo sized (mac) screens */
+}
+@media only screen and (max-device-width: 480px) {
+  /* styles for mobile browsers smaller than 480px; (iPhone) */
+}
+@media only screen and (device-width: 768px) {
+  /* default iPad screens */
+}
+/* different techniques for iPad screening */
+@media only screen and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation: portrait) {
+  /* For portrait layouts only */
+}
+
+@media only screen and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation: landscape) {
+  /* For landscape layouts only */
 }
