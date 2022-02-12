@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"golang.org/x/image/draw"
@@ -59,59 +60,66 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 	if end-start > limit || end <= start {
 		end = start + limit
 	}
-	counter := 0
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	index := 0
 
-		if strings.Contains(path, ".DS_Store") {
-			return nil
-		}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 
-		if path == dir {
-			return nil
-		}
+		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 
-		encodedPath := url.QueryEscape(path)
-		if info.IsDir() {
-			files = append(files, model.File{
-				Name:       filepath.Base(dir),
-				ActualPath: encodedPath,
-				ThumbPath:  "",
-				IsDir:      true,
-			})
-			return nil
-		}
-
-		if start+counter <= end {
-
-			tempPath := getTempPath(path)
-			encodedTempPath := url.QueryEscape(tempPath)
-
-			//https://stackoverflow.com/a/12518877
-			_, err := os.Stat(tempPath)
-			if err != nil && errors.Is(err, os.ErrNotExist) {
-				// path/to/whatever does *not* exist
-				createThumbnailToTemp(path, tempPath)
+			if strings.Contains(path, ".DS_Store") {
+				return nil
 			}
 
-			files = append(files, model.File{
-				Name:       info.Name(),
-				ActualPath: encodedPath,
-				ThumbPath:  encodedTempPath,
-				IsDir:      false,
-			})
-			counter++
+			if path == dir {
+				return nil
+			}
+
+			encodedPath := url.QueryEscape(path)
+
+			if start == 0 && info.IsDir() {
+				files = append(files, model.File{
+					Name:       filepath.Base(dir),
+					ActualPath: encodedPath,
+					ThumbPath:  "",
+					IsDir:      true,
+				})
+				return nil
+			}
+
+			if start < index && index <= end {
+
+				tempPath := getTempPath(path)
+				encodedTempPath := url.QueryEscape(tempPath)
+
+				//https://stackoverflow.com/a/12518877
+				_, err := os.Stat(tempPath)
+				if err != nil && errors.Is(err, os.ErrNotExist) {
+					// path/to/whatever does *not* exist
+					createThumbnailToTemp(path, tempPath)
+				}
+
+				files = append(files, model.File{
+					Name:       info.Name(),
+					ActualPath: encodedPath,
+					ThumbPath:  encodedTempPath,
+					IsDir:      false,
+				})
+			}
+
+			if !info.IsDir() {
+				index++
+			}
+
+			return nil
+		})
+		if err != nil {
+			panic(err)
 		}
-
-		return nil
-	})
-	if err != nil {
-		panic(err)
 	}
-
+	next := "?s=" + strconv.Itoa(end) + "&&e=" + strconv.Itoa(end+5)
 	return model.FilesResponse{
 		Files: files,
-		Start: start,
-		End:   end,
+		Next:  next,
 	}
 }
 

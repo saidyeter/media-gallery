@@ -27,6 +27,7 @@ func (a *App) Init() {
 
 	var varsConfig model.VarsConfig
 	vars, err := os.ReadFile("vars.json")
+	// vars, err := os.ReadFile("../../vars.json")
 	if err != nil {
 		fmt.Println("could not read vars.json :", err)
 		return
@@ -50,19 +51,16 @@ func (a *App) Run(addr string) {
 
 	// Where ORIGIN_ALLOWED is like `scheme://dns[:port]`, or `*` (insecure)
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
-	originsOk := handlers.AllowedOrigins([]string{os.Getenv("ORIGIN_ALLOWED")})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "OPTIONS"})
 
-	// start server listen
-	// with error handling
-	// log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), handlers.CORS(originsOk, headersOk, methodsOk)(router)))
 	log.Fatal(http.ListenAndServe(addr, handlers.CORS(originsOk, headersOk, methodsOk)(a.Router)))
 
 }
 
 func jsonResponse(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
@@ -81,8 +79,7 @@ func downloadResponse(w http.ResponseWriter, f *os.File) {
 		panic(err)
 	}
 
-	//Allow CORS here By * or specific origin
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(f.Name()))
 	w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
 	w.Header().Set("Content-Type", contentType)
@@ -98,21 +95,13 @@ func downloadResponse(w http.ResponseWriter, f *os.File) {
 
 func home(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, 200, `
-- "/" : Home endpoint. Returns other endpoint details.
-- "/dirs" : Directories endpoint. Returns available root directories that specified in "vars.json". Each root directory returns with numeric id. That id can be used in "/files/{id}" as id to retrieve contents in the directory.
-- "/files/{id}" : Files endpoint. Returns directory paths and image file paths, also thumbnail image content as base64. That file path can be used in "/file/{path}" as path to retrieve actual image content. This endpoint also has paging functionality. To do that, start index("s") and end index("e") need to be specified as query parameters. Eg. "http://localhost:8080/files/3?s=3&e=5". Otherwise, the endpoint will return from 0 (zero) to limit.
-- "/file/{path}" : File endpoint. Returns actual image content as base64.
+- '/' : Home endpoint. Returns endpoint details.  
+- '/content' : Root directories endpoint. Returns available root directories that specified in 'vars.json'. For content, there is 'actualPath' property.   
+- '/content/{dir}' : Content endpoint. Returns directory paths and image file paths, also thumbnail image path. There is 'actualPath' to retrieve actual image content or folder content. This endpoint also has paging functionality. To do that, start index('s') and end index('e') need to be specified as query parameters. Eg. 'http://localhost:8080/files/3?s=3&&e=5'. Otherwise, the endpoint will return from 0 (zero) to limit.
+- '/file/{path}' : File endpoint. Returns actual image content as base64.
 `)
 
 }
-
-// func dirs(w http.ResponseWriter, r *http.Request) {
-
-// 	direstoryList := Directories{
-// 		DirList: allowedDirs,
-// 	}
-// 	jsonResponse(w, 200, direstoryList)
-// }
 
 func rootContent(w http.ResponseWriter, r *http.Request) {
 
@@ -164,10 +153,11 @@ func content(w http.ResponseWriter, r *http.Request) {
 	}
 	intE, err := strconv.Atoi(e)
 	if err != nil {
-		intE = 0
+		intE = 5
 	}
-
-	jsonResponse(w, 200, filesFromDir(folderPath, intS, intE))
+	response := filesFromDir(folderPath, intS, intE)
+	response.Next = folderPath + response.Next
+	jsonResponse(w, 200, response)
 }
 
 func file(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +170,7 @@ func file(w http.ResponseWriter, r *http.Request) {
 	input, err := os.Open(decodedValue)
 	if err != nil {
 		fmt.Println("read file error:", err)
+		jsonResponse(w, 200, `none`)
 	}
 	defer input.Close()
 
