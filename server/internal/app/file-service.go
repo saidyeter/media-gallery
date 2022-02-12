@@ -50,7 +50,7 @@ func getFileContentType(out *os.File) (string, error) {
 	return contentType, nil
 }
 
-func filesFromDir(dir string, start int, end int, host string) model.FilesResponse {
+func filesFromDir(dir string, start int, end int) model.FilesResponse {
 
 	// hostWithPort := ""
 
@@ -62,7 +62,6 @@ func filesFromDir(dir string, start int, end int, host string) model.FilesRespon
 	counter := 0
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 
-		encodedPath := url.QueryEscape(path)
 		if strings.Contains(path, ".DS_Store") {
 			return nil
 		}
@@ -71,10 +70,11 @@ func filesFromDir(dir string, start int, end int, host string) model.FilesRespon
 			return nil
 		}
 
+		encodedPath := url.QueryEscape(path)
 		if info.IsDir() {
 			files = append(files, model.File{
 				Name:       filepath.Base(dir),
-				ActualPath: host + "/content/" + encodedPath,
+				ActualPath: encodedPath,
 				ThumbPath:  "",
 				IsDir:      true,
 			})
@@ -88,15 +88,15 @@ func filesFromDir(dir string, start int, end int, host string) model.FilesRespon
 
 			//https://stackoverflow.com/a/12518877
 			_, err := os.Stat(tempPath)
-			if err == nil && errors.Is(err, os.ErrNotExist) {
+			if err != nil && errors.Is(err, os.ErrNotExist) {
 				// path/to/whatever does *not* exist
 				createThumbnailToTemp(path, tempPath)
 			}
 
 			files = append(files, model.File{
 				Name:       info.Name(),
-				ActualPath: host + "/file/" + encodedPath,
-				ThumbPath:  host + "/file/" + encodedTempPath,
+				ActualPath: encodedPath,
+				ThumbPath:  encodedTempPath,
 				IsDir:      false,
 			})
 			counter++
