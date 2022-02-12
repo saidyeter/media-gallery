@@ -22,11 +22,37 @@ function createLink({ Name, ThumbPath, ActualPath, IsDir }) {
   link.classList.add("photo");
   contentBox.appendChild(link);
 }
+
 function params() {
   const items = new Proxy(new URLSearchParams(window.location.search), {
     get: (searchParams, prop) => searchParams.get(prop),
   });
   return items;
+}
+
+async function fillContent(address) {
+  const res = await fetch(address);
+  const data = await res.json();
+  // console.log(data);
+  if (data.Files && data.Files.length > 0) {
+    data.Files.forEach((content) => {
+      createLink(content);
+    });
+
+    if (data.Next) {
+      createButton(data.Next);
+    }
+
+    return data.Files.length;
+  }
+  return 0;
+}
+
+function customEncode(s) {
+  s = s.replace(new RegExp(":", "g"), "%3A");
+  s = s.replace(new RegExp("/", "g"), "%5C");
+  s = s.replace(new RegExp("\\\\", "g"), "%5C");
+  return s;
 }
 
 (async function () {
@@ -41,25 +67,32 @@ function params() {
   let folder = params().directory;
 
   if (folder) {
-    folder = folder.replace(new RegExp(":", "g"), "%3A");
-    folder = folder.replace(new RegExp("/", "g"), "%5C");
-    folder = folder.replace(new RegExp("\\\\", "g"), "%5C");
-    // console.log(folder);
+    folder = customEncode(folder);
     address += "/" + folder;
   }
-  const res = await fetch(address);
-  const data = await res.json();
-  // console.log(data);
-  if (data.Files) {
-    data.Files.forEach((content) => {
-      createLink(content);
-    });
-  } else {
-    address = apiAddress + "content";
-    const res = await fetch(address);
-    const data = await res.json();
-    data.Files.forEach((content) => {
-      createLink(content);
-    });
+
+  const inserted = await fillContent(address);
+  if (inserted == 0) {
+    fillContent(apiAddress + "content");
   }
 })();
+
+function handleNext(folder,button) {
+  
+
+  let address = apiAddress + "content";
+  folder = customEncode(folder);
+  address += "/" + folder;
+
+  fillContent(address);
+  button.parentNode.removeChild(button)
+}
+function createButton(url) {
+  var button = document.createElement("input");
+  button.type = "button";
+  button.value = "+"; // text on button
+  button.onclick = () => {
+    handleNext(url,button);
+  };
+  contentBox.appendChild(button); // add the button to the context
+}

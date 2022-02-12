@@ -13,8 +13,7 @@ type File struct {
 
 type FilesResponse struct {
 	Files []File
-	Start int
-	End   int
+	Next  string
 }
 
 type Dir struct {
