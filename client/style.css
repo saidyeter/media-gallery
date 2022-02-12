@@ -43,16 +43,16 @@ body {
 }
 
 .photo {
-  /* width: 20rem;
-  height: 20rem;
-  background-position: center;
-  background-size: cover;
-  margin-bottom: 3px; */
   width: calc(33.3% - 2px);
   height: 30vw;
   background-position: center;
   background-size: cover;
   margin-bottom: 3px;
+}
+
+#home{
+  text-decoration: none;
+  color: black;
 }
  
 /* https://stackoverflow.com/a/13550716 */
@@ -75,7 +75,6 @@ body {
 @media only screen and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation: portrait) {
   /* For portrait layouts only */
 }
-
 @media only screen and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation: landscape) {
   /* For landscape layouts only */
 }

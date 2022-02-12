@@ -29,6 +29,7 @@ func (a *App) Init() {
 	vars, err := os.ReadFile("vars.json")
 	if err != nil {
 		fmt.Println("could not read vars.json :", err)
+		return
 	}
 	err = json.Unmarshal(vars, &varsConfig)
 	if err != nil {
@@ -39,8 +40,8 @@ func (a *App) Init() {
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/", home)
 	// a.Router.HandleFunc("/dirs", dirs)
-	a.Router.HandleFunc("/content", rootContent)
-	a.Router.HandleFunc("/content/{dir}", content)
+	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/content/{dir}", content).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
 }
 
@@ -61,6 +62,7 @@ func (a *App) Run(addr string) {
 
 func jsonResponse(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
@@ -120,13 +122,15 @@ func rootContent(w http.ResponseWriter, r *http.Request) {
 		encodedPath := url.QueryEscape(allowedDirs[i])
 		files = append(files, model.File{
 			Name:       filepath.Base(allowedDirs[i]),
-			ActualPath: r.Host + "/content/" + encodedPath,
+			ActualPath: encodedPath,
 			ThumbPath:  "",
 			IsDir:      true,
 		})
 	}
 
-	jsonResponse(w, 200, files)
+	response := model.FilesResponse{}
+	response.Files = files
+	jsonResponse(w, 200, response)
 }
 
 func content(w http.ResponseWriter, r *http.Request) {
@@ -144,8 +148,9 @@ func content(w http.ResponseWriter, r *http.Request) {
 				IsDir:      true,
 			})
 		}
-
-		jsonResponse(w, 200, files)
+		response := model.FilesResponse{}
+		response.Files = files
+		jsonResponse(w, 200, response)
 	}
 
 	v := r.URL.Query()
@@ -162,7 +167,7 @@ func content(w http.ResponseWriter, r *http.Request) {
 		intE = 0
 	}
 
-	jsonResponse(w, 200, filesFromDir(folderPath, intS, intE, r.Host))
+	jsonResponse(w, 200, filesFromDir(folderPath, intS, intE))
 }
 
 func file(w http.ResponseWriter, r *http.Request) {
