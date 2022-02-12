@@ -1,14 +1,14 @@
-package main
+package model
 
 type Directories struct {
 	DirList []Dir
 }
 
 type File struct {
-	Name   string
-	Path   string
-	Thumb  string
-	Actual string
+	Name       string
+	ThumbPath  string
+	ActualPath string
+	IsDir      bool
 }
 
 type FilesResponse struct {

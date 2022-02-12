@@ -1,20 +1,22 @@
 # media-gallery
 A media gallery app  
 
+
+## Server
 Server is written by Golang. An http server.
 
-## Server Endpoints
+### Server Endpoints
 
-- `/` : Home endpoint. Returns other endpoint details.
-- `/dirs` : Directories endpoint. Returns available root directories that specified in `vars.json`. Each root directory returns with numeric id. That id can be used in `/files/{id}` as id to retrieve contents in the directory.
-- `/files/{id}` : Files endpoint. Returns directory paths and image file paths, also thumbnail image content as base64. That file path can be used in `/file/{path}` as path to retrieve actual image content. This endpoint also has paging functionality. To do that, start index(`s`) and end index(`e`) need to be specified as query parameters. Eg. `http://localhost:8080/files/3?s=3&&e=5`. Otherwise, the endpoint will return from 0 (zero) to limit.
+- `/` : Home endpoint. Returns endpoint details.  
+- `/content` : Root directories endpoint. Returns available root directories that specified in `vars.json`. For content, there is `actualPath` property.   
+- `/content/{dir}` : Content endpoint. Returns directory paths and image file paths, also thumbnail image path. There is `actualPath` to retrieve actual image content or folder content. This endpoint also has paging functionality. To do that, start index(`s`) and end index(`e`) need to be specified as query parameters. Eg. `http://localhost:8080/files/3?s=3&&e=5`. Otherwise, the endpoint will return from 0 (zero) to limit.
 - `/file/{path}` : File endpoint. Returns actual image content as base64.
 
-Client is written  by HTML Css and JavaScript.
+## Client
+Client is written with HTML, CSS, and JavaScript.
 
 ## Todo
-- Create docker compose file
-- Create web client
+- Create docker files and configure
 
 ## Requirements
 
