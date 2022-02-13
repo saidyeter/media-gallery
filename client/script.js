@@ -1,4 +1,4 @@
-const apiAddress = "http://192.168.1.104:8080/";
+const apiAddress = "http://192.168.1.105:8080/";
 
 const contentBox = document.querySelector("div.content");
 
@@ -15,9 +15,11 @@ function createLink({ Name, ThumbPath, ActualPath, IsDir }) {
     );
     link.style.backgroundImage = `url('folder.png')`;
   } else {
+    // console.log(ActualPath,ThumbPath);
     link.setAttribute("href", apiAddress + "/file/" + ActualPath);
     link.setAttribute("target", "_blank");
     link.style.backgroundImage = `url('${apiAddress + "/file/" + ThumbPath}')`;
+    // console.log(link);
   }
   link.classList.add("photo");
   contentBox.appendChild(link);
@@ -33,7 +35,7 @@ function params() {
 async function fillContent(address) {
   const res = await fetch(address);
   const data = await res.json();
-  // console.log(data);
+  //  console.log(data);
   if (data.Files && data.Files.length > 0) {
     data.Files.forEach((content) => {
       createLink(content);
@@ -48,13 +50,6 @@ async function fillContent(address) {
   return 0;
 }
 
-function customEncode(s) {
-  s = s.replace(new RegExp(":", "g"), "%3A");
-  s = s.replace(new RegExp("/", "g"), "%5C");
-  s = s.replace(new RegExp("\\\\", "g"), "%5C");
-  return s;
-}
-
 (async function () {
   const address = window.location.origin + window.location.pathname;
   const home = document.getElementById("home");
@@ -64,10 +59,9 @@ function customEncode(s) {
 (async function () {
   let address = apiAddress + "content";
 
-  let folder = params().directory;
+  const folder = params().directory;
 
   if (folder) {
-    folder = customEncode(folder);
     address += "/" + folder;
   }
 
@@ -78,19 +72,18 @@ function customEncode(s) {
 })();
 
 function handleNext(folder,button) {
-  
+
 
   let address = apiAddress + "content";
-  folder = customEncode(folder);
   address += "/" + folder;
 
   fillContent(address);
   button.parentNode.removeChild(button)
 }
 function createButton(url) {
-  var button = document.createElement("input");
+  var button = document.createElement("button");
   button.type = "button";
-  button.value = "+"; // text on button
+  button.innerText= "more"
   button.onclick = () => {
     handleNext(url,button);
   };

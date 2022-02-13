@@ -1,12 +1,12 @@
 package app
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -107,8 +107,8 @@ func rootContent(w http.ResponseWriter, r *http.Request) {
 
 	var files []model.File
 	for i := range allowedDirs {
+		encodedPath := base64.StdEncoding.EncodeToString([]byte(allowedDirs[i]))
 
-		encodedPath := url.QueryEscape(allowedDirs[i])
 		files = append(files, model.File{
 			Name:       filepath.Base(allowedDirs[i]),
 			ActualPath: encodedPath,
@@ -128,18 +128,8 @@ func content(w http.ResponseWriter, r *http.Request) {
 	folderPath := vars["dir"]
 
 	if len(folderPath) == 0 {
-		var files []model.File
-		for i := range allowedDirs {
-			files = append(files, model.File{
-				Name:       allowedDirs[i],
-				ActualPath: allowedDirs[i],
-				ThumbPath:  "",
-				IsDir:      true,
-			})
-		}
-		response := model.FilesResponse{}
-		response.Files = files
-		jsonResponse(w, 200, response)
+		rootContent(w, r)
+		return
 	}
 
 	v := r.URL.Query()
@@ -165,7 +155,14 @@ func file(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	path := vars["dir"]
 
-	decodedValue, _ := url.QueryUnescape(path)
+	decoded, err := base64.StdEncoding.DecodeString(path)
+	if err != nil {
+		fmt.Println("read file error:", err)
+		jsonResponse(w, 200, `none`)
+	}
+	decodedValue := string(decoded)
+
+	// decodedValue, _ := url.QueryUnescape(path)
 
 	input, err := os.Open(decodedValue)
 	if err != nil {
