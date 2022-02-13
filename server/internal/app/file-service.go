@@ -1,17 +1,19 @@
 package app
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
 	"image/png"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	_ "golang.org/x/image/webp"
 
 	"golang.org/x/image/draw"
 
@@ -53,7 +55,14 @@ func getFileContentType(out *os.File) (string, error) {
 
 func filesFromDir(dir string, start int, end int) model.FilesResponse {
 
-	// hostWithPort := ""
+	decoded, err := base64.StdEncoding.DecodeString(dir)
+	if err != nil {
+		return model.FilesResponse{
+			Files: nil,
+			Next:  "",
+		}
+	}
+	dir = string(decoded)
 
 	limit := 5
 	var files []model.File
@@ -61,8 +70,26 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 		end = start + limit
 	}
 	index := 0
+	dir = strings.ReplaceAll(dir, "\\", "/")
+	dir = filepath.FromSlash(dir)
 
-	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+	doesExist := false
+
+	_, err = os.Stat(dir)
+
+	if err != nil {
+		st1 := !os.IsNotExist(err)
+		st2 := os.IsExist(err)
+		doesExist = st1
+		fmt.Println(dir)
+		fmt.Println(st1)
+		fmt.Println(st2)
+
+	} else {
+		doesExist = true
+	}
+
+	if doesExist {
 
 		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 
@@ -73,8 +100,7 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 			if path == dir {
 				return nil
 			}
-
-			encodedPath := url.QueryEscape(path)
+			encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
 
 			if start == 0 && info.IsDir() {
 				files = append(files, model.File{
@@ -89,7 +115,7 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 			if start < index && index <= end {
 
 				tempPath := getTempPath(path)
-				encodedTempPath := url.QueryEscape(tempPath)
+				encodedTempPath := base64.StdEncoding.EncodeToString([]byte(tempPath))
 
 				//https://stackoverflow.com/a/12518877
 				_, err := os.Stat(tempPath)
