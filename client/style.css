@@ -32,6 +32,12 @@ body {
   border-bottom: 1px solid black;
 }
 
+.header-sub{
+  display: flex;
+  justify-content: space-between;
+  width: 80%;
+}
+
 .content {
   /* flex-grow: 1;
   width: 100%;
@@ -48,6 +54,20 @@ body {
   background-position: center;
   background-size: cover;
   margin-bottom: 3px;
+}
+
+.desc{
+  background-color: rgba(255, 255, 255, 0.486);
+  background-blend-mode: overlay;
+  font-size: 0.7rem;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  color: white;
+  text-shadow: 0 0 2px #000; /* horizontal-offset vertical-offset 'blur' colour */
+  -moz-text-shadow: 0 0 2px #000;
+  -webkit-text-shadow: 0 0 2px #000;
 }
 
 button {
