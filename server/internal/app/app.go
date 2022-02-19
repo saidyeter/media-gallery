@@ -72,7 +72,7 @@ func downloadResponse(w http.ResponseWriter, f *os.File) {
 		panic(err)
 	}
 
-	f.Seek(0, 0)
+	// f.Seek(0, 0)
 
 	fi, err := f.Stat()
 	if err != nil {

@@ -20,20 +20,7 @@ import (
 	"github.com/kordiseps/media-gallery/model"
 )
 
-/*
-	var varsConfig model.VarsConfig
-	vars, err := os.ReadFile("vars.json")
-	if err != nil {
-		fmt.Println("could not read vars.json :", err)
-	}
-	err = json.Unmarshal(vars, &varsConfig)
-	if err != nil {
-		fmt.Println("could not deserialize vars.json :", err)
-	}
-	for _, v := range varsConfig.Dirs {
-		allowedDirs = append(allowedDirs, v)
-	}
-*/
+var supportedImageFileExtensions []string = []string{".png", ".jpg", ".jpeg", ".webp"}
 
 func getFileContentType(out *os.File) (string, error) {
 	//https://golangcode.com/get-the-content-type-of-file/
@@ -49,7 +36,7 @@ func getFileContentType(out *os.File) (string, error) {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
 	contentType := http.DetectContentType(buffer)
-
+	out.Seek(0, 0)
 	return contentType, nil
 }
 
@@ -159,8 +146,23 @@ func getTempPath(path string) string {
 	outputPath := filepath.Join(os.TempDir(), "media-gallery", hiearchy) + "_resized.png"
 	return outputPath
 }
+func find(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
 
 func createThumbnailToTemp(path string, outputPath string) {
+
+	ext := filepath.Ext(path)
+
+	if !find(supportedImageFileExtensions, ext) {
+		return
+	}
+
 	parent := filepath.Dir(outputPath)
 
 	err := os.MkdirAll(parent, os.ModePerm)
@@ -209,19 +211,3 @@ func createThumbnailToTemp(path string, outputPath string) {
 		png.Encode(output, expectedSize)
 	}
 }
-
-// func getBase64(path string) string {
-
-// 	f, err := os.Open(path)
-// 	if err != nil {
-// 		fmt.Println("getBase64 error:", err)
-// 		return err.Error()
-// 	}
-// 	// Read entire JPG into byte slice.
-// 	reader := bufio.NewReader(f)
-// 	content, _ := ioutil.ReadAll(reader)
-
-// 	// Encode as base64.
-// 	encoded := base64.StdEncoding.EncodeToString(content)
-// 	return encoded
-// }
