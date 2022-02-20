@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -36,7 +37,13 @@ func (a *App) Init() {
 	if err != nil {
 		fmt.Println("could not deserialize vars.json :", err)
 	}
-	allowedDirs = append(allowedDirs, varsConfig.Dirs...)
+	for _, val := range varsConfig.Dirs {
+
+		if _, err := os.Stat(val); os.IsNotExist(err) {
+			continue
+		}
+		allowedDirs = append(allowedDirs, val)
+	}
 
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/", home)
@@ -135,6 +142,16 @@ func content(w http.ResponseWriter, r *http.Request) {
 		rootContent(w, r)
 		return
 	}
+	decoded, err := base64.StdEncoding.DecodeString(folderPath)
+	if err != nil {
+		jsonResponse(w, 404, "cannot DecodeString")
+	}
+	dir := string(decoded)
+
+	if !isPathUnderRoot(dir) {
+		fmt.Println("folder cannot find:", dir)
+		jsonResponse(w, 404, "")
+	}
 
 	v := r.URL.Query()
 
@@ -149,7 +166,7 @@ func content(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		intE = 5
 	}
-	response := filesFromDir(folderPath, intS, intE)
+	response := filesFromDir(dir, intS, intE)
 	response.Next = folderPath + response.Next
 	jsonResponse(w, 200, response)
 }
@@ -166,14 +183,29 @@ func file(w http.ResponseWriter, r *http.Request) {
 	}
 	decodedValue := string(decoded)
 
-	// decodedValue, _ := url.QueryUnescape(path)
+	if !isPathUnderRoot(decodedValue) {
+		fmt.Println("file cannot find:", decodedValue)
+		jsonResponse(w, 404, "")
+	}
 
 	input, err := os.Open(decodedValue)
 	if err != nil {
 		fmt.Println("read file error:", err)
-		jsonResponse(w, 200, `none`)
+		jsonResponse(w, 404, "")
 	}
 	defer input.Close()
 
 	downloadResponse(w, input)
+}
+
+func isPathUnderRoot(path string) bool {
+	if strings.HasPrefix(path, os.TempDir()) {
+		return true
+	}
+	for _, val := range allowedDirs {
+		if strings.HasPrefix(path, val) {
+			return true
+		}
+	}
+	return false
 }
