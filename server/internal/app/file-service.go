@@ -42,15 +42,6 @@ func getFileContentType(out *os.File) (string, error) {
 
 func filesFromDir(dir string, start int, end int) model.FilesResponse {
 
-	decoded, err := base64.StdEncoding.DecodeString(dir)
-	if err != nil {
-		return model.FilesResponse{
-			Files: nil,
-			Next:  "",
-		}
-	}
-	dir = string(decoded)
-
 	limit := 5
 	var files []model.File
 	if end-start > limit || end <= start {
@@ -62,7 +53,7 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 
 	doesExist := false
 
-	_, err = os.Stat(dir)
+	_, err := os.Stat(dir)
 
 	if err != nil {
 		st1 := !os.IsNotExist(err)
@@ -148,7 +139,7 @@ func getTempPath(path string) string {
 }
 func find(slice []string, val string) bool {
 	for _, item := range slice {
-		if item == val {
+		if item == val || item == strings.ToLower(val) {
 			return true
 		}
 	}
