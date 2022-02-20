@@ -106,11 +106,15 @@ func home(w http.ResponseWriter, r *http.Request) {
 func rootContent(w http.ResponseWriter, r *http.Request) {
 
 	var files []model.File
-	for i := range allowedDirs {
-		encodedPath := base64.StdEncoding.EncodeToString([]byte(allowedDirs[i]))
+	for _, val := range allowedDirs {
+
+		if _, err := os.Stat(val); os.IsNotExist(err) {
+			continue
+		}
+		encodedPath := base64.StdEncoding.EncodeToString([]byte(val))
 
 		files = append(files, model.File{
-			Name:       filepath.Base(allowedDirs[i]),
+			Name:       filepath.Base(val),
 			ActualPath: encodedPath,
 			ThumbPath:  "",
 			IsDir:      true,
