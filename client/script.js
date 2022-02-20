@@ -117,7 +117,7 @@ function getContentState() {
   if (a) {
     return a.style.display == "none" ? 'desc' : 'content'
   }
-  return  'content'
+  return  'desc'
 }
 function toggleDescAndLink() {
   if (getContentState() == 'content') {
