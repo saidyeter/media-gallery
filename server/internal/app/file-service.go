@@ -7,6 +7,8 @@ import (
 	"image"
 	_ "image/jpeg"
 	"image/png"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,10 +42,10 @@ func getFileContentType(out *os.File) (string, error) {
 	return contentType, nil
 }
 
-func filesFromDir(dir string, start int, end int) model.FilesResponse {
+func filesFromDir(dir string, start int, end int) model.ContentsResponse {
 
 	limit := 5
-	var files []model.File
+	var contents []model.Content
 	if end-start > limit || end <= start {
 		end = start + limit
 	}
@@ -57,41 +59,37 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 
 	if err != nil {
 		st1 := !os.IsNotExist(err)
-		st2 := os.IsExist(err)
+		// st2 := os.IsExist(err)
 		doesExist = st1
-		fmt.Println(dir)
-		fmt.Println(st1)
-		fmt.Println(st2)
 
 	} else {
 		doesExist = true
 	}
 
 	if doesExist {
+		if start == 0 {
+			dirs := dirsFromDir(dir)
+			contents = append(contents, dirs...)
+		}
+		contentsFromDir, err := ioutil.ReadDir(dir)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-
-			if strings.Contains(path, ".DS_Store") {
-				return nil
+		for _, content := range contentsFromDir {
+			// fmt.Println(content.Name(), content.IsDir())
+			path := filepath.Join(dir, content.Name())
+			if strings.Contains(path, ".DS_Store") || strings.Contains(path, ".localized") {
+				continue
 			}
 
-			if path == dir {
-				return nil
-			}
-			encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
-
-			if start == 0 && info.IsDir() {
-				files = append(files, model.File{
-					Name:       filepath.Base(dir),
-					ActualPath: encodedPath,
-					ThumbPath:  "",
-					IsDir:      true,
-				})
-				return nil
+			if path == dir || content.IsDir() {
+				continue
 			}
 
 			if start < index && index <= end {
 
+				encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
 				tempPath := getTempPath(path)
 				encodedTempPath := base64.StdEncoding.EncodeToString([]byte(tempPath))
 
@@ -102,29 +100,61 @@ func filesFromDir(dir string, start int, end int) model.FilesResponse {
 					createThumbnailToTemp(path, tempPath)
 				}
 
-				files = append(files, model.File{
-					Name:       info.Name(),
+				contents = append(contents, model.Content{
+					Name:       filepath.Base(path),
 					ActualPath: encodedPath,
 					ThumbPath:  encodedTempPath,
 					IsDir:      false,
 				})
 			}
 
-			if !info.IsDir() {
+			if !content.IsDir() {
 				index++
 			}
-
-			return nil
-		})
-		if err != nil {
-			panic(err)
 		}
 	}
 	next := "?s=" + strconv.Itoa(end) + "&&e=" + strconv.Itoa(end+5)
-	return model.FilesResponse{
-		Files: files,
-		Next:  next,
+	return model.ContentsResponse{
+		Contents: contents,
+		Next:     next,
 	}
+}
+
+func dirsFromDir(dir string) []model.Content {
+
+	var dirs []model.Content
+	dir = strings.ReplaceAll(dir, "\\", "/")
+	dir = filepath.FromSlash(dir)
+
+	contents, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+		return []model.Content{}
+	}
+
+	for _, content := range contents {
+		// fmt.Println(content.Name(), content.IsDir())
+		path := filepath.Join(dir, content.Name())
+		if strings.Contains(path, ".DS_Store") || strings.Contains(path, ".localized") {
+			continue
+		}
+
+		if path == dir {
+			continue
+		}
+
+		if content.IsDir() {
+			encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
+			dirs = append(dirs, model.Content{
+				Name:       filepath.Base(path),
+				ActualPath: encodedPath,
+				ThumbPath:  "",
+				IsDir:      true,
+			})
+			continue
+		}
+	}
+	return dirs
 }
 
 func getTempPath(path string) string {

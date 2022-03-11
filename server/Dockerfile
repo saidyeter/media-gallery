@@ -1,25 +1,7 @@
-FROM golang:latest
-
-
-
-# Set the Current Working Directory inside the container
+FROM  golang:1.17-alpine
+RUN mkdir /app
+ADD . /app
 WORKDIR /app
-
-# Copy go mod and sum files
-COPY go.mod go.sum ./
-
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
-
-# Copy the source from the current directory to the Working Directory inside the container
-COPY . . 
-# Build the Go app
-RUN chmod +x entrypoint.sh
-ENTRYPOINT [ "./entrypoint.sh" ]
-#RUN go env -w GO111MODULE=off
-
-
-# Expose port 8080 to the outside world
-EXPOSE 8080
-
-CMD ["./main"]
+RUN go build -o main ./cmd/media-gallery
+CMD ["/app/main"]
