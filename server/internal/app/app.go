@@ -18,7 +18,7 @@ import (
 	"github.com/kordiseps/media-gallery/model"
 )
 
-var allowedDirs []string
+var rootDirs []string
 
 type App struct {
 	Router *mux.Router
@@ -26,12 +26,26 @@ type App struct {
 
 func (a *App) Init() {
 
+	a.Router = mux.NewRouter()
+	a.Router.HandleFunc("/", home)
+	// a.Router.HandleFunc("/dirs", dirs)
+	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/content/{dir}", content).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
+	loadDirs()
+}
+
+func loadDirs() {
 	var varsConfig model.VarsConfig
+
 	vars, err := os.ReadFile("vars.json")
 	// vars, err := os.ReadFile("../../vars.json")
 	if err != nil {
-		fmt.Println("could not read vars.json :", err)
-		return
+		vars, err = os.ReadFile("../../vars.json")
+		if err != nil {
+			fmt.Println("could not read vars.json :", err)
+			return
+		}
 	}
 	err = json.Unmarshal(vars, &varsConfig)
 	if err != nil {
@@ -42,15 +56,9 @@ func (a *App) Init() {
 		if _, err := os.Stat(val); os.IsNotExist(err) {
 			continue
 		}
-		allowedDirs = append(allowedDirs, val)
+		rootDirs = append(rootDirs, val)
 	}
 
-	a.Router = mux.NewRouter()
-	a.Router.HandleFunc("/", home)
-	// a.Router.HandleFunc("/dirs", dirs)
-	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
-	a.Router.HandleFunc("/content/{dir}", content).Methods("GET", "OPTIONS")
-	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
 }
 
 func (a *App) Run(addr string) {
@@ -67,36 +75,32 @@ func (a *App) Run(addr string) {
 
 func jsonResponse(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
 }
 
 func downloadResponse(w http.ResponseWriter, f *os.File) {
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(f.Name()))
 	contentType, err := getFileContentType(f)
 	if err != nil {
-		panic(err)
+		fmt.Println("file type cannot find", err)
+	} else {
+		w.Header().Set("Content-Type", contentType)
 	}
-
-	// f.Seek(0, 0)
 
 	fi, err := f.Stat()
 	if err != nil {
-		panic(err)
+		fmt.Println("file size cannot get", err)
+	} else {
+		w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
 	}
 
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(f.Name()))
-	w.Header().Set("Content-Length", strconv.FormatInt(fi.Size(), 10))
-	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(200)
-
 	_, err = io.Copy(w, f)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -112,15 +116,15 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 func rootContent(w http.ResponseWriter, r *http.Request) {
 
-	var files []model.File
-	for _, val := range allowedDirs {
+	var files []model.Content
+	for _, val := range rootDirs {
 
 		if _, err := os.Stat(val); os.IsNotExist(err) {
 			continue
 		}
 		encodedPath := base64.StdEncoding.EncodeToString([]byte(val))
 
-		files = append(files, model.File{
+		files = append(files, model.Content{
 			Name:       filepath.Base(val),
 			ActualPath: encodedPath,
 			ThumbPath:  "",
@@ -128,8 +132,8 @@ func rootContent(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	response := model.FilesResponse{}
-	response.Files = files
+	response := model.ContentsResponse{}
+	response.Contents = files
 	jsonResponse(w, 200, response)
 }
 
@@ -144,7 +148,7 @@ func content(w http.ResponseWriter, r *http.Request) {
 	}
 	decoded, err := base64.StdEncoding.DecodeString(folderPath)
 	if err != nil {
-		jsonResponse(w, 404, "cannot DecodeString")
+		jsonResponse(w, 404, err)
 	}
 	dir := string(decoded)
 
@@ -178,20 +182,23 @@ func file(w http.ResponseWriter, r *http.Request) {
 
 	decoded, err := base64.StdEncoding.DecodeString(path)
 	if err != nil {
-		fmt.Println("read file error:", err)
-		jsonResponse(w, 200, `none`)
+		fmt.Println("read file error")
+		jsonResponse(w, 200, err)
+		return
 	}
 	decodedValue := string(decoded)
 
 	if !isPathUnderRoot(decodedValue) {
 		fmt.Println("file cannot find:", decodedValue)
 		jsonResponse(w, 404, "")
+		return
 	}
 
 	input, err := os.Open(decodedValue)
 	if err != nil {
-		fmt.Println("read file error:", err)
-		jsonResponse(w, 404, "")
+		fmt.Println("read file error")
+		jsonResponse(w, 404, err)
+		return
 	}
 	defer input.Close()
 
@@ -202,8 +209,12 @@ func isPathUnderRoot(path string) bool {
 	if strings.HasPrefix(path, os.TempDir()) {
 		return true
 	}
-	for _, val := range allowedDirs {
-		if strings.HasPrefix(path, val) {
+	for _, val := range rootDirs {
+		cleanPath := strings.ReplaceAll(path, "\\", "")
+		cleanPath = strings.ReplaceAll(cleanPath, "/", "")
+		cleanVal := strings.ReplaceAll(val, "\\", "")
+		cleanVal = strings.ReplaceAll(cleanVal, "/", "")
+		if strings.HasPrefix(cleanPath, cleanVal) {
 			return true
 		}
 	}

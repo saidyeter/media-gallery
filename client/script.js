@@ -1,4 +1,4 @@
-const apiAddress = "http://192.168.1.105:8080/";
+const apiAddress = "http://localhost:8080/";
 
 const contentBox = document.querySelector("div.content");
 
@@ -57,8 +57,8 @@ async function fillContent(address) {
   const res = await fetch(address);
   const data = await res.json();
   //  console.log(data);
-  if (data.Files && data.Files.length > 0) {
-    data.Files.forEach((content) => {
+  if (data.Contents && data.Contents.length > 0) {
+    data.Contents.forEach((content) => {
       createLink(content);
       createDesc(content);
     });
@@ -67,7 +67,7 @@ async function fillContent(address) {
       createButton(data.Next);
     }
 
-    return data.Files.length;
+    return data.Contents.length;
   }
   return 0;
 }

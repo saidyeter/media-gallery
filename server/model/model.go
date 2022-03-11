@@ -4,16 +4,16 @@ type Directories struct {
 	DirList []Dir
 }
 
-type File struct {
+type Content struct {
 	Name       string
 	ThumbPath  string
 	ActualPath string
 	IsDir      bool
 }
 
-type FilesResponse struct {
-	Files []File
-	Next  string
+type ContentsResponse struct {
+	Contents []Content
+	Next     string
 }
 
 type Dir struct {
