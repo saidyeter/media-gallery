@@ -13,6 +13,8 @@ body {
   background-attachment: fixed;
   width: calc(100vw - 2rem);
   height: calc(100vh - 2rem);
+  display: flex;
+  justify-content: center;
 }
 
 .wrapper {
@@ -32,7 +34,7 @@ body {
   border-bottom: 1px solid black;
 }
 
-.header-sub{
+.header-sub {
   display: flex;
   justify-content: space-between;
   width: 80%;
@@ -48,15 +50,18 @@ body {
   justify-content: space-between;
 }
 
-.photo {
+.grid-item {
   width: calc(33.3% - 2px);
   height: 30vw;
-  background-position: center;
-  background-size: cover;
   margin-bottom: 3px;
 }
 
-.desc{
+.photo {
+  background-position: center;
+  background-size: cover;
+}
+
+.desc {
   background-color: rgba(255, 255, 255, 0.486);
   background-blend-mode: overlay;
   font-size: 0.7rem;
@@ -71,14 +76,41 @@ body {
 }
 
 button {
-  width: calc(33.3% - 2px);
-  height: 30vw;
-  margin-bottom: 3px;
-  color: red;
+  /* https://copy-paste-css.com/ */
+  cursor: pointer;
+  outline: 0;
+  display: inline-block;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  color: #0d6efd;
+  border-color: #0d6efd;
+}
+button:hover {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 
-#home{
+#home {
   text-decoration: none;
   color: black;
 }
- 
+
+@media screen and (min-width: 600px) {
+  .wrapper {
+    width: 600px;
+  }
+  .grid-item {
+    width: 197px;
+    height: 197px;
+    margin-bottom: 3px;
+  }
+}
