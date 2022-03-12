@@ -18,6 +18,7 @@ function createLink({ Name, ThumbPath, ActualPath, IsDir }) {
     link.style.backgroundImage = `url('${"/file/" + ThumbPath}')`;
   }
   link.classList.add("photo");
+  link.classList.add("grid-item");
   if (getContentState() == 'desc') {
     link.style.display = 'none'
   }
@@ -39,6 +40,7 @@ function createDesc({ Name, ThumbPath, ActualPath, IsDir }) {
   div.addEventListener("click", () => window.location = href);
   div.classList.add("photo");
   div.classList.add("desc");
+  div.classList.add("grid-item");
   if (getContentState() == 'content') {
     div.style.display = 'none'
   }
@@ -72,12 +74,6 @@ async function fillContent(address) {
 }
 
 (async function () {
-  const address = window.location.origin + window.location.pathname;
-  const home = document.getElementById("home");
-  home.href = address;
-})();
-
-(async function () {
   let address = "/content";
 
   const folder = params().directory;
@@ -93,14 +89,13 @@ async function fillContent(address) {
 })();
 
 function handleNext(folder, button) {
-
-
   let address = "/content";
   address += "/" + folder;
 
   fillContent(address);
   button.parentNode.removeChild(button)
 }
+
 function createButton(url) {
   var button = document.createElement("button");
   button.type = "button";
@@ -108,6 +103,7 @@ function createButton(url) {
   button.onclick = () => {
     handleNext(url, button);
   };
+  button.classList.add("grid-item")
   contentBox.appendChild(button); // add the button to the context
 }
 
