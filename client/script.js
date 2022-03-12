@@ -1,4 +1,3 @@
-const apiAddress = "http://localhost:8080/";
 
 const contentBox = document.querySelector("div.content");
 
@@ -14,9 +13,9 @@ function createLink({ Name, ThumbPath, ActualPath, IsDir }) {
     link.setAttribute("href", href);
     link.style.backgroundImage = `url('folder.png')`;
   } else {
-    link.setAttribute("href", apiAddress + "/file/" + ActualPath);
+    link.setAttribute("href", "/file/" + ActualPath);
     link.setAttribute("target", "_blank");
-    link.style.backgroundImage = `url('${apiAddress + "/file/" + ThumbPath}')`;
+    link.style.backgroundImage = `url('${"/file/" + ThumbPath}')`;
   }
   link.classList.add("photo");
   if (getContentState() == 'desc') {
@@ -33,8 +32,8 @@ function createDesc({ Name, ThumbPath, ActualPath, IsDir }) {
     href = getBaseUrl() + "?directory=" + ActualPath
     div.style.backgroundImage = `url('folder.png')`;
   } else {
-    href = apiAddress + "/file/" + ActualPath
-    div.style.backgroundImage = `url('${apiAddress + "/file/" + ThumbPath}')`;
+    href =  "/file/" + ActualPath
+    div.style.backgroundImage = `url('${"/file/" + ThumbPath}')`;
   }
 
   div.addEventListener("click", () => window.location = href);
@@ -79,7 +78,7 @@ async function fillContent(address) {
 })();
 
 (async function () {
-  let address = apiAddress + "content";
+  let address = "/content";
 
   const folder = params().directory;
 
@@ -89,14 +88,14 @@ async function fillContent(address) {
 
   const inserted = await fillContent(address);
   if (inserted == 0) {
-    fillContent(apiAddress + "content");
+    fillContent("/content");
   }
 })();
 
 function handleNext(folder, button) {
 
 
-  let address = apiAddress + "content";
+  let address = "/content";
   address += "/" + folder;
 
   fillContent(address);

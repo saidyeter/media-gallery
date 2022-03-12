@@ -27,11 +27,13 @@ type App struct {
 func (a *App) Init() {
 
 	a.Router = mux.NewRouter()
-	a.Router.HandleFunc("/", home)
+	a.Router.HandleFunc("/api", home)
 	// a.Router.HandleFunc("/dirs", dirs)
 	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/content/{dir}", content).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
+	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/")))
+	// a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("../../../client/")))
 	loadDirs()
 }
 
@@ -39,7 +41,6 @@ func loadDirs() {
 	var varsConfig model.VarsConfig
 
 	vars, err := os.ReadFile("vars.json")
-	// vars, err := os.ReadFile("../../vars.json")
 	if err != nil {
 		vars, err = os.ReadFile("../../vars.json")
 		if err != nil {
