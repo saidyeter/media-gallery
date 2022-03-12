@@ -1,7 +1,7 @@
 FROM  golang:1.17-alpine
 RUN mkdir /app
 ADD . /app
-WORKDIR /app
+WORKDIR /app/server
 RUN go mod download
 RUN go build -o main ./cmd/media-gallery
-CMD ["/app/main"]
+CMD ["/app/server/main"]
