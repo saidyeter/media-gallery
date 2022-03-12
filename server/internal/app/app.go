@@ -60,6 +60,15 @@ func loadDirs() {
 		rootDirs = append(rootDirs, val)
 	}
 
+	content := dirsFromDir("../content")
+	for _, val := range content {
+		decoded, err := base64.StdEncoding.DecodeString(val.ActualPath)
+		if err != nil {
+			continue
+		}
+		rootDirs = append(rootDirs, string(decoded))
+	}
+
 }
 
 func (a *App) Run(addr string) {

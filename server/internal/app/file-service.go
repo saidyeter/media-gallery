@@ -22,6 +22,8 @@ import (
 	"github.com/kordiseps/media-gallery/model"
 )
 
+var limit int = 15
+
 var supportedImageFileExtensions []string = []string{".png", ".jpg", ".jpeg", ".webp"}
 
 func getFileContentType(out *os.File) (string, error) {
@@ -43,8 +45,6 @@ func getFileContentType(out *os.File) (string, error) {
 }
 
 func filesFromDir(dir string, start int, end int) model.ContentsResponse {
-
-	limit := 5
 	var contents []model.Content
 	if end-start > limit || end <= start {
 		end = start + limit
@@ -113,7 +113,7 @@ func filesFromDir(dir string, start int, end int) model.ContentsResponse {
 			}
 		}
 	}
-	next := "?s=" + strconv.Itoa(end) + "&&e=" + strconv.Itoa(end+5)
+	next := "?s=" + strconv.Itoa(end) + "&&e=" + strconv.Itoa(end+limit)
 	return model.ContentsResponse{
 		Contents: contents,
 		Next:     next,
