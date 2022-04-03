@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -15,10 +16,13 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
+	"github.com/kordiseps/media-gallery/internal/content"
 	"github.com/kordiseps/media-gallery/model"
 )
 
 var rootDirs []string
+
+var contentservice content.ContentService
 
 type App struct {
 	Router *mux.Router
@@ -28,47 +32,38 @@ func (a *App) Init() {
 
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/api", home)
-	// a.Router.HandleFunc("/dirs", dirs)
 	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
-	a.Router.HandleFunc("/content/{dir}", content).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/content/{dir}", contents).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/")))
-	// a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("../../../client/")))
+	contentservice = content.ContentService{}
 	loadDirs()
 }
 
 func loadDirs() {
-	var varsConfig model.VarsConfig
 
-	vars, err := os.ReadFile("vars.json")
+	vars, err := readFileLineByLine("dirs.txt")
 	if err != nil {
-		vars, err = os.ReadFile("../../vars.json")
-		if err != nil {
-			fmt.Println("could not read vars.json :", err)
-			return
+		vars, err = readFileLineByLine("../../dirs.txt")
+	}
+	if err == nil {
+		for _, val := range vars {
+			if contentservice.FolderExists(val) {
+				rootDirs = append(rootDirs, val)
+			}
 		}
 	}
-	err = json.Unmarshal(vars, &varsConfig)
-	if err != nil {
-		fmt.Println("could not deserialize vars.json :", err)
-	}
-	for _, val := range varsConfig.Dirs {
 
-		if _, err := os.Stat(val); os.IsNotExist(err) {
-			continue
+	if contentservice.FolderExists("../content") {
+		content := contentservice.DirsFromDir("../content")
+		for _, val := range content {
+			decoded, err := base64.StdEncoding.DecodeString(val.ActualPath)
+			if err != nil {
+				continue
+			}
+			rootDirs = append(rootDirs, string(decoded))
 		}
-		rootDirs = append(rootDirs, val)
 	}
-
-	content := dirsFromDir("../content")
-	for _, val := range content {
-		decoded, err := base64.StdEncoding.DecodeString(val.ActualPath)
-		if err != nil {
-			continue
-		}
-		rootDirs = append(rootDirs, string(decoded))
-	}
-
 }
 
 func (a *App) Run(addr string) {
@@ -121,7 +116,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 - '/content/{dir}' : Content endpoint. Returns directory paths and image file paths, also thumbnail image path. There is 'actualPath' to retrieve actual image content or folder content. This endpoint also has paging functionality. To do that, start index('s') and end index('e') need to be specified as query parameters. Eg. 'http://localhost:8080/files/3?s=3&&e=5'. Otherwise, the endpoint will return from 0 (zero) to limit.
 - '/file/{path}' : File endpoint. Returns actual image content as base64.
 `)
-
 }
 
 func rootContent(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +141,7 @@ func rootContent(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, 200, response)
 }
 
-func content(w http.ResponseWriter, r *http.Request) {
+func contents(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	folderPath := vars["dir"]
@@ -178,9 +172,9 @@ func content(w http.ResponseWriter, r *http.Request) {
 	}
 	intE, err := strconv.Atoi(e)
 	if err != nil {
-		intE = 5
+		intE = 0
 	}
-	response := filesFromDir(dir, intS, intE)
+	response := contentservice.FilesFromDir(dir, intS, intE)
 	response.Next = folderPath + response.Next
 	jsonResponse(w, 200, response)
 }
@@ -229,4 +223,38 @@ func isPathUnderRoot(path string) bool {
 		}
 	}
 	return false
+}
+
+func getFileContentType(out *os.File) (string, error) {
+	//https://golangcode.com/get-the-content-type-of-file/
+
+	// Only the first 512 bytes are used to sniff the content type.
+	buffer := make([]byte, 512)
+
+	_, err := out.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	// Use the net/http package's handy DectectContentType function. Always returns a valid
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	contentType := http.DetectContentType(buffer)
+	out.Seek(0, 0)
+	return contentType, nil
+}
+
+// read file line by line
+func readFileLineByLine(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
