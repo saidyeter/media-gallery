@@ -20,7 +20,3 @@ type Dir struct {
 	Id   string
 	Path string
 }
-
-type VarsConfig struct {
-	Dirs []string `json:"dirs"`
-}
