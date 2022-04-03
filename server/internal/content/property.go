@@ -22,7 +22,14 @@ func (f *ContentService) GetTempPath(path string) string {
 		splitted := strings.Split(hiearchy, ":")
 		hiearchy = splitted[len(splitted)-1]
 	}
-	outputPath := filepath.Join(os.TempDir(), "media-gallery", hiearchy) + "_resized.png"
+	ext := ""
+	if f.IsImageFile(path) {
+		ext = "_resized.png"
+	} else {
+		ext = ".gif"
+	}
+
+	outputPath := filepath.Join(os.TempDir(), "media-gallery", hiearchy) + ext
 	return outputPath
 }
 

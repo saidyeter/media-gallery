@@ -49,9 +49,7 @@ func (f *ContentService) FilesFromDir(dir string, start int, end int) model.Cont
 
 			if start < index && index <= end {
 
-				encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
 				tempPath := f.GetTempPath(path)
-				encodedTempPath := base64.StdEncoding.EncodeToString([]byte(tempPath))
 
 				//https://stackoverflow.com/a/12518877
 				_, err := os.Stat(tempPath)
@@ -59,6 +57,8 @@ func (f *ContentService) FilesFromDir(dir string, start int, end int) model.Cont
 					// path/to/whatever does *not* exist
 					f.CreateThumbnail(path, tempPath)
 				}
+				encodedPath := base64.StdEncoding.EncodeToString([]byte(path))
+				encodedTempPath := base64.StdEncoding.EncodeToString([]byte(tempPath))
 
 				contents = append(contents, model.Content{
 					Name:       filepath.Base(path),

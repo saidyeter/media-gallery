@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/kordiseps/media-gallery/internal/content"
+	"github.com/kordiseps/media-gallery/internal/util"
 	"github.com/kordiseps/media-gallery/model"
 )
 
@@ -35,6 +36,7 @@ func (a *App) Init() {
 	a.Router.HandleFunc("/content", rootContent).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/content/{dir}", contents).Methods("GET", "OPTIONS")
 	a.Router.HandleFunc("/file/{dir}", file).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/test/{dir}", test).Methods("GET", "OPTIONS")
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/")))
 	contentservice = content.ContentService{}
 	loadDirs()
@@ -165,15 +167,8 @@ func contents(w http.ResponseWriter, r *http.Request) {
 
 	s := v.Get("s")
 	e := v.Get("e")
-
-	intS, err := strconv.Atoi(s)
-	if err != nil {
-		intS = 0
-	}
-	intE, err := strconv.Atoi(e)
-	if err != nil {
-		intE = 0
-	}
+	intS := util.ToIntSafely(s)
+	intE := util.ToIntSafely(e)
 	response := contentservice.FilesFromDir(dir, intS, intE)
 	response.Next = folderPath + response.Next
 	jsonResponse(w, 200, response)
@@ -186,7 +181,7 @@ func file(w http.ResponseWriter, r *http.Request) {
 
 	decoded, err := base64.StdEncoding.DecodeString(path)
 	if err != nil {
-		fmt.Println("read file error")
+		fmt.Println("read file error", err)
 		jsonResponse(w, 200, err)
 		return
 	}
@@ -200,7 +195,7 @@ func file(w http.ResponseWriter, r *http.Request) {
 
 	input, err := os.Open(decodedValue)
 	if err != nil {
-		fmt.Println("read file error")
+		fmt.Println("read file error", err)
 		jsonResponse(w, 404, err)
 		return
 	}
@@ -228,10 +223,21 @@ func isPathUnderRoot(path string) bool {
 func getFileContentType(out *os.File) (string, error) {
 	//https://golangcode.com/get-the-content-type-of-file/
 
-	// Only the first 512 bytes are used to sniff the content type.
-	buffer := make([]byte, 512)
+	fi, err := out.Stat()
+	if err != nil {
+		// Could not obtain stat, handle error
+		return "", err
+	}
 
-	_, err := out.Read(buffer)
+	size := fi.Size()
+	if size > 512 {
+		size = 512
+	}
+
+	// Only the first 512 bytes are used to sniff the content type.
+	buffer := make([]byte, size)
+
+	_, err = out.Read(buffer)
 	if err != nil {
 		return "", err
 	}
@@ -257,4 +263,22 @@ func readFileLineByLine(filePath string) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 	return lines, scanner.Err()
+}
+
+func test(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	path := vars["dir"]
+
+	decoded, err := base64.StdEncoding.DecodeString(path)
+	if err != nil {
+		fmt.Println("read file error", err)
+		jsonResponse(w, 200, err)
+		return
+	}
+	decodedValue := string(decoded)
+
+	contentservice.Test((decodedValue))
+
+	jsonResponse(w, 200, `test run`)
+
 }
