@@ -33,7 +33,6 @@ jobs:
 
       - name: Create package folder to copy release items 
         run: |
-          cd .. 
           mkdir -p publish-folder/server 
           echo $PWD 
           ls -R
