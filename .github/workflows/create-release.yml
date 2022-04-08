@@ -54,6 +54,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          # asset_path: ./bin/azblogfilter.linux-amd64.tar.gz
-          # asset_name: azblogfilter.linux-amd64.tar.gz
+          asset_path: ./release.tar.gz
+          asset_name: release.tar.gz
           asset_content_type: application/gzip
