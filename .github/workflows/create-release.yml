@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17.x
-          
+
       - name: Build 
         run: |
           cd ./server 
@@ -54,6 +54,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./bin/azblogfilter.linux-amd64.tar.gz
-          asset_name: azblogfilter.linux-amd64.tar.gz
+          # asset_path: ./bin/azblogfilter.linux-amd64.tar.gz
+          # asset_name: azblogfilter.linux-amd64.tar.gz
           asset_content_type: application/gzip
