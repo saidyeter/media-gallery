@@ -22,8 +22,8 @@ jobs:
 
       - name: Build 
         run: |
-        cd ./server 
-        go build ./cmd/media-gallery
+          cd ./server 
+          go build ./cmd/media-gallery
         
       # - name: Remove Unnecessary Files 
       #   run: go build ./cmd/media-gallery
