@@ -17,25 +17,14 @@ jobs:
         with:
           go-version: 1.17.x
           
-      # - name: Change Directory to Server 
-      #   run: cd ./server
-
       - name: Build 
         run: |
           cd ./server 
           go build ./cmd/media-gallery
         
-      # - name: Remove Unnecessary Files 
-      #   run: go build ./cmd/media-gallery
-
-      # - name: Change directory to root 
-      #   run: cd ..
-
       - name: Create package folder to copy release items 
         run: |
-          mkdir -p publish-folder/server 
-          echo $PWD 
-          ls -R
+          mkdir -p publish-folder/server
           cp -r ./client ./publish-folder 
           cp ./server/media-gallery ./publish-folder/server 
           cp ./server/dirs.txt ./publish-folder/server 
@@ -46,3 +35,25 @@ jobs:
         with:
             name: Release-demo-${{ github.run_id }}
             path: "release.tar.gz"
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          # body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./bin/azblogfilter.linux-amd64.tar.gz
+          asset_name: azblogfilter.linux-amd64.tar.gz
+          asset_content_type: application/gzip
