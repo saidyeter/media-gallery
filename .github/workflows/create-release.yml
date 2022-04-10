@@ -60,7 +60,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          upload_url: ${{ jobs.create-release.steps.create_new_release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.steps.create_new_release.outputs.upload_url }}
           asset_path: ./release.tar.gz
           asset_name: release.tar.gz
           asset_content_type: application/gzip
