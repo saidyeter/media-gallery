@@ -69,6 +69,47 @@ jobs:
           asset_name: linux.zip
           asset_content_type: application/zip
 
+  win-build:
+    runs-on: windows-latest
+    needs: create-release
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.x
+
+      - name: Build 
+        run: |
+          cd ./server 
+          go build ./cmd/media-gallery
+        
+      - name: Create package folder to copy release items 
+        run: |
+          mkdir -p publish-folder/server
+          cp -r ./client ./publish-folder 
+          cp ./server/media-gallery ./publish-folder/server 
+          cp ./server/dirs.txt ./publish-folder/server  
+          cd publish-folder; zip -r -X ../release.zip *
+
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+            name: Release-demo-${{ github.run_id }}
+            path: "release.zip"
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: windows.zip
+          asset_content_type: application/zip
+
   # macos-build:
   #   runs-on: macos-latest
   #   needs: create-release
