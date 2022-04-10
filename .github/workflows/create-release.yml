@@ -90,7 +90,7 @@ jobs:
         run: |
           mkdir -p publish-folder/server
           cp -r ./client ./publish-folder 
-          cp ./server/media-gallery ./publish-folder/server 
+          cp ./server/media-gallery* ./publish-folder/server 
           cp ./server/dirs.txt ./publish-folder/server 
           tar -czf release.tar.gz -C ./publish-folder .
 
@@ -131,7 +131,7 @@ jobs:
         run: |
           mkdir -p publish-folder/server
           cp -r ./client ./publish-folder 
-          cp ./server/media-gallery ./publish-folder/server 
+          cp ./server/media-gallery* ./publish-folder/server 
           cp ./server/dirs.txt ./publish-folder/server 
           tar -czf release.tar.gz -C ./publish-folder .
 
