@@ -55,7 +55,7 @@ jobs:
           cp -r ./client ./publish-folder 
           cp ./server/media-gallery* ./publish-folder/server 
           cp ./server/dirs.txt ./publish-folder/server  
-          cd publish-folder; zip -r -X ../release.zip *
+          tar -czf release.zip -C ./publish-folder .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
