@@ -42,9 +42,7 @@ jobs:
 
           - os: windows-latest
             ZIPCOMMAND: Compress-Archive * ../release.zip
-    steps:
-     - uses: actions/checkout@v1
-     - run: echo ${{matrix.TARGET}}
+ 
     runs-on:  ${{ matrix.os }}
     needs: create-release
     steps:
