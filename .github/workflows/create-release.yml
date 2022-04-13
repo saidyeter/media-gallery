@@ -33,6 +33,18 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            ZIPCOMMAND: zip -r -X ../release.zip *
+
+          - os: ubuntu-latest
+            ZIPCOMMAND: zip -r -X ../release.zip *
+
+          - os: windows-latest
+            ZIPCOMMAND: Compress-Archive * ../release.zip
+    steps:
+     - uses: actions/checkout@v1
+     - run: echo ${{matrix.TARGET}}
     runs-on:  ${{ matrix.os }}
     needs: create-release
     steps:
@@ -55,7 +67,7 @@ jobs:
           cp -r ./client ./publish-folder 
           cp ./server/media-gallery* ./publish-folder/server 
           cp ./server/dirs.txt ./publish-folder/server  
-          tar -czf release.zip -C ./publish-folder .
+          cd publish-folder; ${{ matrix.ZIPCOMMAND }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
